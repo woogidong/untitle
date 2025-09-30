@@ -11,7 +11,7 @@ st.subheader("1-1. 서브헤더")  # 작은 제목
 st.text("이것은 일반 텍스트입니다.")  # 일반 텍스트
 st.markdown("**마크다운** _지원_ :star:")  # 마크다운 지원
 st.code("print('Hello, Streamlit!')", language="python")  # 코드 블록
-st.latex(r"E=mc^2")  # LaTeX 수식
+st.latex(r"E=mc^22332323")  # LaTeX 수식
 
 # 2. 데이터 표시
 st.header("2. 데이터 표시")

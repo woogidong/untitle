@@ -1,9 +1,108 @@
 import streamlit as st
 
+import pandas as pd
+import numpy as np
+import altair as alt
+
 st.title("🎈 My new app")
 st.write(
     "Let's start building! For help and inspiration, head over to [docs.streamlit.io](https://docs.streamlit.io/)."
 )
+
+# ----------------------
+# 성적 데이터 시각화 앱
+# ----------------------
+st.header("성적 데이터 시각화 앱")
+
+# 1. CSV 파일 업로드
+uploaded_file = st.file_uploader("성적 데이터 CSV 파일을 업로드하세요", type=["csv"])
+df = None
+if uploaded_file is not None:
+    df = pd.read_csv(uploaded_file)
+    st.success("데이터 미리보기:")
+    st.dataframe(df)
+else:
+    st.info("CSV 파일을 업로드하면 시각화 옵션이 활성화됩니다.")
+
+# 2. 시각화 옵션
+if df is not None:
+    st.subheader("시각화 옵션을 선택하세요")
+    chart_type = st.radio(
+        "그래프 종류",
+        ("히스토그램", "막대그래프", "산점도", "상자그림")
+    )
+
+    # 3. 변수 선택 및 맞춤형 그래프
+    if chart_type == "히스토그램":
+        num_cols = df.select_dtypes(include=np.number).columns.tolist()
+        if num_cols:
+            col = st.selectbox("히스토그램으로 볼 변수를 선택하세요", num_cols)
+            st.write(f"### {col}의 히스토그램")
+            chart = alt.Chart(df).mark_bar().encode(
+                alt.X(col, bin=alt.Bin(maxbins=30)),
+                y='count()'
+            )
+            st.altair_chart(chart, use_container_width=True)
+        else:
+            st.warning("수치형 변수가 없습니다.")
+
+    elif chart_type == "막대그래프":
+        cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+        num_cols = df.select_dtypes(include=np.number).columns.tolist()
+        if cat_cols and num_cols:
+            cat_col = st.selectbox("범주형(막대) 변수 선택", cat_cols)
+            num_col = st.selectbox("수치형(값) 변수 선택", num_cols)
+            st.write(f"### {cat_col}별 {num_col}의 막대그래프")
+            chart = alt.Chart(df).mark_bar().encode(
+                x=cat_col,
+                y=alt.Y(num_col, aggregate='mean'),
+                tooltip=[cat_col, num_col]
+            )
+            st.altair_chart(chart, use_container_width=True)
+        else:
+            st.warning("범주형 또는 수치형 변수가 부족합니다.")
+
+    elif chart_type == "산점도":
+        num_cols = df.select_dtypes(include=np.number).columns.tolist()
+        if len(num_cols) >= 2:
+            x_col = st.selectbox("X축 변수 선택", num_cols, key="scatter_x")
+            y_col = st.selectbox("Y축 변수 선택", [c for c in num_cols if c != x_col], key="scatter_y")
+            st.write(f"### {x_col} vs {y_col} 산점도")
+            chart = alt.Chart(df).mark_circle(size=60).encode(
+                x=x_col,
+                y=y_col,
+                tooltip=num_cols
+            ).interactive()
+            st.altair_chart(chart, use_container_width=True)
+        else:
+            st.warning("산점도를 그릴 수치형 변수가 2개 이상 필요합니다.")
+
+    elif chart_type == "상자그림":
+        num_cols = df.select_dtypes(include=np.number).columns.tolist()
+        cat_cols = df.select_dtypes(include=["object", "category"]).columns.tolist()
+        if num_cols:
+            y_col = st.selectbox("상자그림으로 볼 수치형 변수 선택", num_cols)
+            if cat_cols:
+                x_col = st.selectbox("(선택) 그룹화할 범주형 변수 선택", ["없음"] + cat_cols)
+                if x_col != "없음":
+                    st.write(f"### {x_col}별 {y_col}의 상자그림")
+                    chart = alt.Chart(df).mark_boxplot().encode(
+                        x=x_col,
+                        y=y_col
+                    )
+                else:
+                    st.write(f"### {y_col}의 상자그림")
+                    chart = alt.Chart(df).mark_boxplot().encode(
+                        y=y_col
+                    )
+            else:
+                st.write(f"### {y_col}의 상자그림")
+                chart = alt.Chart(df).mark_boxplot().encode(
+                    y=y_col
+                )
+            st.altair_chart(chart, use_container_width=True)
+        else:
+            st.warning("수치형 변수가 없습니다.")
 
 # 1. 텍스트 요소
 st.header("1. 텍스트 요소")  # 페이지의 섹션 헤더
